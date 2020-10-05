@@ -18,9 +18,9 @@ type PullRequest struct {
 }
 
 type Execute struct {
-	Setup   []Command
-	Track   []Command
-	Cleanup []Command
+	Setup   []Command `yaml:"setup"`
+	Track   []Command `yaml:"track"`
+	Cleanup []Command `yaml:"cleanup"`
 }
 
 type Command struct {
