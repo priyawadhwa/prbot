@@ -1,2 +1,2 @@
 out/prbot:
-	go build -o @ prbot.go
+	go build -o $@ prbot.go
