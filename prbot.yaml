@@ -1,0 +1,25 @@
+github:
+    owner: kubernetes
+    repo: minikube
+    botName: minikube-pr-bot
+    accessTokenEnvVar: GITHUB_ACCESS_TOKEN
+    pullRequest:
+      labels:
+          - ok-to-test
+execute:
+    setup:
+        - name: update minikube repo
+          command: git pull origin master
+          dir: $HOME/minikube
+        - name: build mkcmp/minikube
+          command: make out/mkcmp out/minikube
+          dir: $HOME/minikube
+    track:
+        - name: run mkcmp
+          command: out/mkcmp out/minikube pr://{{.PRNumber}}
+          dir: $HOME/minikube
+    cleanup:
+        - name: delete minikube
+          command: out/minikube delete --all
+          dir: $HOME/minikube
+
