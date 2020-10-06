@@ -63,31 +63,35 @@ func (g *client) CommentOnPR(pr int, message string) error {
 	return nil
 }
 
-// ListOpenPRsWithLabel returns all open PRs with the specified label
-func (g *client) ListOpenPRsWithLabel(label string) ([]int, error) {
+// ListOpenPRs returns all open PRs matching constraints specified in config
+func (g *client) ListOpenPRs(cfg *v1.Github) ([]int, error) {
 	validPrs := []int{}
 	prs, _, err := g.Client.PullRequests.List(g.ctx, g.owner, g.repo, &github.PullRequestListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "listing pull requests")
 	}
 	for _, pr := range prs {
-		if prContainsLabel(pr.Labels, label) {
+		if prContainsLabels(pr.Labels, cfg.Labels) {
 			validPrs = append(validPrs, pr.GetNumber())
 		}
 	}
 	return validPrs, nil
 }
 
-func prContainsLabel(labels []*github.Label, label string) bool {
-	for _, l := range labels {
-		if l == nil {
-			continue
+func prContainsLabels(labels []*github.Label, requiredLabels []string) bool {
+RequiredLabel:
+	for _, r := range requiredLabels {
+		for _, l := range labels {
+			if l == nil {
+				continue
+			}
+			if l.GetName() == r {
+				continue RequiredLabel
+			}
 		}
-		if l.GetName() == label {
-			return true
-		}
+		return false
 	}
-	return false
+	return true
 }
 
 // NewCommitsExist checks if new commits exist since minikube-pr-bot
