@@ -20,13 +20,20 @@ func Comment(ctx context.Context, cfg *v1.Config, contents []byte) error {
 	return nil
 }
 
+// ListPRs lists the PRs we need to run the PR bot on
+func ListPRs(ctx context.Context, cfg *v1.Config) ([]int, error) {
+	ct := newClient(ctx, cfg.Github)
+	return ct.listOpenPRs(cfg.Github)
+}
+
 // client provides the context and client with necessary auth
 // for interacting with the Github API
 type client struct {
 	ctx context.Context
 	*github.Client
-	owner string
-	repo  string
+	owner   string
+	repo    string
+	botName string
 }
 
 // newClient returns a github client with the necessary auth
@@ -41,10 +48,11 @@ func newClient(ctx context.Context, cfg v1.Github) *client {
 	// Return a client instance from github
 	c := github.NewClient(tc)
 	return &client{
-		ctx:    ctx,
-		Client: c,
-		owner:  cfg.Owner,
-		repo:   cfg.Repo,
+		ctx:     ctx,
+		Client:  c,
+		owner:   cfg.Owner,
+		repo:    cfg.Repo,
+		botName: cfg.BotName,
 	}
 }
 
@@ -63,18 +71,25 @@ func (g *client) CommentOnPR(pr int, message string) error {
 	return nil
 }
 
-// ListOpenPRs returns all open PRs matching constraints specified in config
-func (g *client) ListOpenPRs(cfg *v1.Github) ([]int, error) {
+// listOpenPRs returns all open PRs matching constraints specified in config
+func (g *client) listOpenPRs(cfg v1.Github) ([]int, error) {
 	validPrs := []int{}
 	prs, _, err := g.Client.PullRequests.List(g.ctx, g.owner, g.repo, &github.PullRequestListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "listing pull requests")
 	}
 	for _, pr := range prs {
-		if prContainsLabels(pr.Labels, cfg.Labels) {
-			validPrs = append(validPrs, pr.GetNumber())
+		// skip PRs that don't haave the correct label
+		if !prContainsLabels(pr.Labels, cfg.Labels) {
+			continue
 		}
+		// make sure we haven't already commented on the PR
+		if newCommits, err := g.newCommitsExist(pr.GetNumber()); err != nil || !newCommits {
+			continue
+		}
+		validPrs = append(validPrs, pr.GetNumber())
 	}
+
 	return validPrs, nil
 }
 
@@ -94,12 +109,12 @@ RequiredLabel:
 	return true
 }
 
-// NewCommitsExist checks if new commits exist since minikube-pr-bot
+// newCommitsExist checks if new commits exist since minikube-pr-bot
 // commented on the PR. If so, return true.
-func (g *client) NewCommitsExist(pr int, login string) (bool, error) {
-	lastCommentTime, err := g.timeOfLastComment(pr, login)
+func (g *client) newCommitsExist(pr int) (bool, error) {
+	lastCommentTime, err := g.timeOfLastComment(pr, g.botName)
 	if err != nil {
-		return false, errors.Wrapf(err, "getting time of last comment by %s on pr %d", login, pr)
+		return false, errors.Wrapf(err, "getting time of last comment by %s on pr %d", g.botName, pr)
 	}
 	lastCommitTime, err := g.timeOfLastCommit(pr)
 	if err != nil {

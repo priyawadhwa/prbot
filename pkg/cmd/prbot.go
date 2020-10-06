@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/pkg/errors"
@@ -39,13 +40,23 @@ func Execute() {
 }
 
 func runPRBot(ctx context.Context) error {
-	c, err := config.Get(cfgFile)
+	cfg, err := config.Get(cfgFile)
 	if err != nil {
 		return errors.Wrap(err, "getting config file")
 	}
-	contents, err := execute.Execute(c)
+	prs, err := github.ListPRs(ctx, cfg)
 	if err != nil {
-		return errors.Wrap(err, "executing")
+		return errors.Wrap(err, "listing prs")
 	}
-	return github.Comment(ctx, c, contents)
+	log.Printf("Got PRs: %v", prs)
+	for _, pr := range prs {
+		contents, err := execute.Execute(cfg, execute.NewConfig(pr))
+		if err != nil {
+			return errors.Wrap(err, "executing")
+		}
+		if err := github.Comment(ctx, cfg, contents); err != nil {
+			return errors.Wrap(err, "commenting on github")
+		}
+	}
+	return nil
 }
