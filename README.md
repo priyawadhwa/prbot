@@ -49,6 +49,9 @@ The PR Bot will take the stdout of the `track` section in the config, and commen
 
 To cleanup, we specificy that all minikube clusters should be deleted.
 
+### Provided Variables
+- {{.PRNumber}} The bot will be able to replace this as required if specified in the config
+
 ## Building PR Bot
 To build the PR bot binary, run:
 
