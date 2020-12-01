@@ -1,0 +1,11 @@
+[Unit]
+Description=Minikube performance analysis PR bot
+
+[Service]
+User=performance-monitor
+ExecStart=/home/performance-monitor/prbot --config /home/performance-monitor/prbot.yaml
+Environment="GITHUB_ACCESS_TOKEN=<access token>" "PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games:/home/performance-monitor:/usr/local/go/bin" "GOARCH=amd64" "GOPATH=/home/performance-monitor/go" "HOME=/home/performance-monitor" "PWD=/home/performance-monitor" "CGO_ENABLED=1" "GOCACHE=/home/performance-monitor/.cache/go-build" "GOOS=linux"
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target

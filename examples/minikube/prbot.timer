@@ -1,0 +1,6 @@
+[Unit]
+Description=Minikube performance analysis PR bot
+Requires=prbot.service
+
+[Timer]
+OnCalendar=*:0/10
