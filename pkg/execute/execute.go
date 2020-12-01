@@ -25,15 +25,18 @@ func NewConfig(pr int) Config {
 
 // Execute executes whatever commands we need and
 func Execute(cfg *v1.Config, ecfg Config) ([]byte, error) {
+	log.Print("Executing setup...")
 	if err := runCommands(cfg.Execute.Setup, ecfg); err != nil {
 		return nil, errors.Wrap(err, "setup")
 	}
 
+	log.Print("Starting tracking...")
 	output, err := runCommandsCombinedOutput(cfg.Execute.Track, ecfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "track")
 	}
 
+	log.Print("Executing cleanup...")
 	if err := runCommands(cfg.Execute.Cleanup, ecfg); err != nil {
 		return nil, errors.Wrap(err, "cleanup")
 	}
@@ -49,13 +52,15 @@ func runCommandsCombinedOutput(cmds []v1.Command, ecfg Config) ([]byte, error) {
 		}
 		split := strings.Split(templated, " ")
 		cmd := exec.Command(split[0], split[1:]...)
+		cmd.Stderr = os.Stderr
 		cmd.Dir = os.ExpandEnv(c.Dir)
-		log.Printf("Running %v: %v", c.Name, cmd.Args)
+		log.Printf("Running [%v]: %v", c.Name, cmd.Args)
 		o, err := cmd.Output()
 		if err != nil {
 			log.Printf("[%v] failed: %v\n%v", c.Name, err, string(o))
 			return nil, errors.Wrapf(err, "running command [%v]", c.Name)
 		}
+		log.Print(string(o))
 		output = append(output, o...)
 	}
 	return output, nil
@@ -70,7 +75,7 @@ func runCommands(cmds []v1.Command, ecfg Config) error {
 		split := strings.Split(templated, " ")
 		cmd := exec.Command(split[0], split[1:]...)
 		cmd.Dir = os.ExpandEnv(c.Dir)
-		log.Printf("Running %v: %v", c.Name, cmd.Args)
+		log.Printf("Running [%v]: %v", c.Name, cmd.Args)
 		if output, err := cmd.CombinedOutput(); err != nil {
 			log.Printf("[%v] failed: %v\n%v", c.Name, err, string(output))
 			return errors.Wrapf(err, "running command [%v]", c.Name)

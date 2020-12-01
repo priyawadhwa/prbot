@@ -52,10 +52,12 @@ func runPRBot(ctx context.Context) error {
 	for _, pr := range prs {
 		contents, err := execute.Execute(cfg, execute.NewConfig(pr))
 		if err != nil {
-			return errors.Wrap(err, "executing")
+			log.Printf("error executing for pr %v, skipping: %v", pr, err)
+			continue
 		}
-		if err := github.Comment(ctx, cfg, contents); err != nil {
-			return errors.Wrap(err, "commenting on github")
+		if err := github.Comment(ctx, cfg, pr, contents); err != nil {
+			log.Printf("error commenting for pr %v, skipping: %v", pr, err)
+			continue
 		}
 	}
 	return nil

@@ -2,7 +2,6 @@ package github
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -14,10 +13,9 @@ import (
 )
 
 // Comment comments on the PR
-func Comment(ctx context.Context, cfg *v1.Config, contents []byte) error {
+func Comment(ctx context.Context, cfg *v1.Config, pr int, contents []byte) error {
 	c := newClient(ctx, cfg.Github)
-	fmt.Println(c)
-	return nil
+	return c.CommentOnPR(pr, string(contents))
 }
 
 // ListPRs lists the PRs we need to run the PR bot on

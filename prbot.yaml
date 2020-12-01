@@ -16,8 +16,8 @@ execute:
           dir: $HOME/minikube
     track:
         - name: run mkcmp
-          command: out/mkcmp out/minikube pr://{{.PRNumber}}
-          dir: $HOME/minikube
+          command: mkcmp ./minikube pr://{{.PRNumber}}
+          dir: $HOME/minikube/out
     cleanup:
         - name: delete minikube
           command: out/minikube delete --all
